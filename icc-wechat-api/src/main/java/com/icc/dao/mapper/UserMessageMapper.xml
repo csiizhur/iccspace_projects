@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.icc.dao.UserMessageDao">
+
+	<insert id="insertUserMessage" parameterType="com.icc.entity.UserMessage">
+		<selectKey order="BEFORE" resultType="String" keyProperty="msgId">
+			select  replace(uuid(),'-','')   from dual
+		</selectKey>
+		insert into USER_MESSAGE(
+			MSG_ID,
+			FROM_USERID,
+			TO_USERID,
+			MSG_CONTENT,
+			CREATE_TIME,
+			DELETED,
+			IS_READ
+		)values(
+			#{msgId},
+			#{fromUserId},
+			#{toUserId},
+			#{msgContent},
+			now(),
+			0,
+			0
+		);
+	</insert>
+	
+	<!-- 非Linux -->
+	<select id="queryUserMessageList2">
+		select * from 
+		(select * from USER_MESSAGE order by create_time desc) as m 
+		where to_userid=#{toUserId} group by from_userid order by create_time desc
+	</select>
+	<select id="queryUserMessageList" resultType="java.util.HashMap">
+		select from_userid fromUserId,to_userid toUserId,msg_content msgContent,date_format(create_time,'%Y-%m-%d %h:%i %p') msgTime,is_read readFlg,
+		u.nickname fNickName,u.headimg fHeadImg
+		from USER_MESSAGE m left join USER u on u.id=m.from_userid
+		where msg_id in(select SUBSTRING_INDEX(GROUP_CONCAT(msg_id order by create_time desc),',',1) from USER_MESSAGE group by from_userId) 
+		and to_userid=#{toUserId} ORDER BY create_time desc;
+	</select>
+	<select id="queryUserMessageListByToUserId2" resultType="java.util.HashMap">
+		select * from (select from_userid fromUserId,to_userid toUserId,msg_content msgContent,date_format(create_time,'%Y-%m-%d %h:%i %p') msgTime,is_read readFlg,
+		u.nickname fNickName,u.headimg fHeadImg,u2.nickname tNickName,u2.headimg tHeadImg
+		from USER_MESSAGE m left join USER u on u.id=m.from_userid and u.id!=#{toUserId} left join USER u2 on m.to_userid=u2.id and u2.id!=#{toUserId}
+		where create_time=(select MAX(create_time) from USER_MESSAGE
+			where from_userid=m.from_userid and to_userid=m.to_userid or from_userid=m.to_userid and to_userid=m.from_userid))A 
+		where A.fromUserId=#{toUserId} or A.toUserId=#{toUserId}
+	</select>
+	<select id="queryUserMessageListByToUserId3" resultType="java.util.HashMap">
+		select u.nickName, u.headImg,A.* from (select case when from_userid=#{toUserId} then to_userid else from_userid end as userId, 
+		msg_content msgContent,date_format(create_time,'%Y-%m-%d %h:%i %p') msgTime,case when from_userid=#{toUserId} then 1 else is_read end as readFlg
+		from USER_MESSAGE m
+		where (from_UserId=#{toUserId} or to_UserId=#{toUserId} )
+		and create_time=(select MAX(create_time) from USER_MESSAGE where from_userid=m.from_userid and to_userid=m.to_userid or from_userid=m.to_userid and to_userid=m.from_userid) )A left join USER u on u.id=A.userid
+	</select>
+	<select id="queryUserMessageListByToUserId" resultType="java.util.Map">
+		call query_users_message(#{toUserid})
+	</select>
+	
+	<update id="updateUserMessageReadFlg">
+		update USER_MESSAGE set is_read=1 where from_userid=#{fromUserId} and to_userid=#{toUserId}
+	</update>
+	
+	<select id="queryFromUserMessageList" resultType="java.util.HashMap">
+		select from_userid fromUserId,to_userid toUserId,msg_content msgContent,date_format(create_time,'%Y-%m-%d %h:%i %p') msgTime,is_read readFlg,
+		u.nickname fNickName,u.headimg fHeadImg,u2.nickname tNickName,u2.headimg tHeadImg
+		from USER_MESSAGE m left join USER u on m.from_userid=u.id
+		left join USER u2 on m.to_userid=u2.id
+		where m.from_userid=#{fromUserId} and m.to_userid=#{toUserId} 
+		and m.CREATE_TIME BETWEEN (select date_sub(curdate(),interval 1 month)) and (select date_sub(curdate(),interval -1 month))
+		and m.deleted=0
+		order by m.create_time desc
+	</select>
+	<select id="queryFromUserMessageNoUserInfoList" resultType="java.util.HashMap">
+		select from_userid fromUserId,to_userid toUserId,msg_content msgContent,date_format(create_time,'%Y-%m-%d %h:%i %p') msgTime
+		from USER_MESSAGE m
+		where m.from_userid=#{fromUserId} and m.to_userid=#{toUserId} 
+		and m.CREATE_TIME BETWEEN (select date_sub(curdate(),interval 1 month)) and (select date_sub(curdate(),interval -1 month))
+		and m.deleted=0
+		order by m.create_time asc
+	</select>
+	<select id="queryFromUserMessageNoUserInfoListNoTime" resultType="java.util.HashMap">
+		select from_userid fromUserId,to_userid toUserId,msg_content msgContent,date_format(create_time,'%Y-%m-%d %h:%i %p') msgTime
+		from USER_MESSAGE m
+		where m.from_userid in(#{fromUserId},#{toUserId}) and m.to_userid in(#{toUserId},#{fromUserId})
+		and m.deleted=0
+		order by m.create_time asc
+	</select>
+	
+	<select id="queryUserMessageExist" resultType="java.lang.Integer">
+		select count(*) from USER_MESSAGE where to_userid=#{toUserId} or to_userid=#{fromUserId}
+	</select>
+	
+	<select id="queryTwoUsersInfo" resultType="java.util.HashMap">
+		select
+		id userId, 
+		nickname nickName,
+		headimg headImg,
+		sex,
+		mobilephone mobilePhone
+		from USER u where u.id=#{toUserId} or u.id=#{fromUserId} 
+	</select>
+</mapper>

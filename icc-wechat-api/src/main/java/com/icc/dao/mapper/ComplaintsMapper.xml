@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.icc.dao.ComplaintsDao">
+
+	<insert id="insertUsersComplaint">
+		<selectKey keyProperty="Id" resultType="String" order="BEFORE">
+			select replace(uuid(),'-','')  from dual
+		</selectKey>
+		insert into COMPLAINTS(
+			id,
+			link_shopsid,
+			complaint_userid,
+			complaint_time,
+			complaint_type,
+			complaint_status,
+			complaint_result,
+			result_time,
+			deleted
+		)
+		values(
+			#{Id},
+			#{linkShopsId},
+			#{complaintUserId},
+			#{complaintTime},
+			#{complaintType},
+			#{complaintStatus},
+			#{complaintResult},
+			#{resultTime},
+			1
+		)
+	</insert>
+</mapper>

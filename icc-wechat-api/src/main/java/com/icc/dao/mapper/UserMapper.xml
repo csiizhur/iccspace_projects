@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.icc.dao.UserDao">
+	<!-- mybatis二级缓存开启 -->
+	<cache eviction="FIFO" flushInterval="60000" size="512" readOnly="true" />
+	<resultMap type="com.icc.entity.User" id="userMap">
+		<id column="id" property="userId" />
+		<result column="openid" property="openId" />
+		<result column="nickname" property="nickName" />
+		<result column="headimg" property="headImg" />
+		<result column="username" property="userName" />
+		<result column="sex" property="sex" />
+		<result column="age" property="age" />
+		<result column="mobilephone" property="mobilePhone" />
+		<result column="managehistory" property="manageHistory" />
+		<result column="subscribetime" property="subscribeTime" />
+		<result column="is_subscribe" property="isSubscribe" />
+		<result column="user_role" property="userRole" />
+		<result column="agent_userid" property="agentUserId" />
+		<result column="delete" property="delete" />
+	</resultMap>
+
+	<select id="getUserInfo" resultMap="userMap">
+		select * from
+		USER where 1=1
+		<if test="openId!=null">
+			and openid=#{openId}
+		</if>
+		<if test="Id!=null and Id !=''">
+			and id=#{Id}
+		</if>
+	</select>
+	
+	<select id="getUserInfoByUserId" resultMap="userMap">
+		select ID as id,AGE as age,SEX as sex,NICKNAME nickname,HEADIMG as headimg,MANAGEHISTORY as managehistory,USER_ROLE as user_role from USER where id=#{userId}
+	</select>
+	<select id="getUserInfoByOpenId" resultMap="userMap">
+		select ID,AGE,SEX,NICKNAME,HEADIMG,MANAGEHISTORY from USER where openid=#{openId}
+	</select>
+	<select id="queryUUID" resultType="java.lang.String">
+		select  replace(uuid(),'-','')   from dual
+	</select>
+	
+	<insert id="insertUsersInfo" parameterType="com.icc.entity.User">
+		<selectKey keyProperty="userId" resultType="String" order="BEFORE">  
+        select  replace(uuid(),'-','')   from dual  
+    	</selectKey>
+		insert into USER(
+			ID,OPENID,NICKNAME,HEADIMG,SEX,AGE,<if test="isSubscribe!=null">SUBSCRIBE_TIME,IS_SUBSCRIBE,</if>LASTACCESSTIME
+		) values(
+			#{userId},#{openId},#{nickName},#{headImg},#{sex},#{age},<if test="isSubscribe!=null">#{subscribeTime},
+			#{isSubscribe},</if>#{lastAccessTime}
+		);
+	</insert>
+	
+	<update id="updateUsersInfo">
+		update USER set is_subscribe=#{isSubscribe} where openid=#{openId}
+	</update>
+	<update id="updateUserIdentitySwitch">
+		update USER set USER_ROLE=#{userRole} where ID=#{userId} or openid=#{openId}
+	</update>
+	
+	<select id="queryUserIsExists" resultType="java.lang.Integer">
+		select count(*) from USER where openid=#{openId}
+	</select>
+	<select id="queryUserIsSubscribe" resultType="java.lang.Integer">
+		select is_subscribe from USER where openid=#{openId}
+	</select>
+	
+	<select id="queryUserinfoByProcedure" resultMap="userMap">
+		<![CDATA[
+			call role(#{userRole})
+		]]>
+	</select>
+	
+	<select id="queryUserExceptShops" resultType="com.icc.dto.UserExpectShopsDto">
+		select s.shop_size shopSize,s.city,s.area,s.street,s.address,
+		sh.userid as userId,sh.id as releaseShopsId,
+		sh.expect_business_type businessType,rent_fee rentFee 
+		from SHOPS_HISTORY sh
+		inner join SHOPS s
+		on s.historyid=sh.id
+		where sh.userid=#{userId} and sh.deleted=0 ORDER BY sh.create_time desc limit 0,1
+	</select>
+	<select id="queryUserExceptRentShops" resultType="com.icc.dto.UserExpectShopsDto">
+		select expectshopsize_min expectShopSizeMin,expectshopsize_max expectShopSizeMax,
+		cityno city,areano area,streetno street,address,
+		userid userId,rent_id releaseShopsId,
+		businesstype businessType,expectrentfee_min expectRentFeeMin,expectrentfee_max expectRentFeeMax
+		from RENT_SHOPS
+		where userid=#{userId} and deleted=0 ORDER BY create_time desc limit 0,1
+	</select>
+	
+	<resultMap type="java.util.Map" id="sortMap">
+		<result column="id" property="Id"></result>
+		<result column="nickname" property="nickName"></result>
+		<result column="username" property="userName"></result>
+		<result column="sorts" property="sorts"></result>
+	</resultMap>
+	<select id="queryUsersSort" resultType="java.util.Map">
+		<![CDATA[
+		select id,nickname,username,
+		((case when find_in_set(#{userName},username)>0 then 16 else 0 end)
+		+(case when find_in_set(#{nickName},nickname)>0 then 8 else 0 end)) as sorts
+		from USER where username like '%' ||  #{userName} || '%'
+		or nickname like concat('%','${nickName}','%')
+		order by sorts desc
+		]]>
+	</select>
+	
+	<update id="updateUserHeadImage">
+		update USER
+		set	NICKNAME=#{nickName},SEX=#{sex},AGE=#{age},MOBILEPHONE=#{mobilePhone},MANAGEHISTORY=#{manageHistory}
+		<if test="headImg!=null">,HEADIMG=#{headImg}</if>
+		where
+		ID=#{userId}
+	</update>
+	<update id="updateUserMoreInformation">
+		update USER
+		set	NICKNAME=#{nickName},SEX=#{sex},AGE=#{age},MOBILEPHONE=#{mobilePhone},MANAGEHISTORY=#{manageHistory}
+		<if test="headImg!=null">,HEADIMG=#{headImg}</if>
+		where
+		ID=#{userId}
+	</update>
+	
+	<delete id="deleteByPrimaryKey">
+		delete from USER where id=#{id}
+	</delete>
+</mapper>

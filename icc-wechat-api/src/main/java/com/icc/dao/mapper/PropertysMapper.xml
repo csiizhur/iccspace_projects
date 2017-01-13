@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.icc.dao.PropertysDao">
+
+	<resultMap type="java.util.Map" id="PropertysMap">
+		<result column="propertyname" property="propertyName"></result>
+		<result column="address" property="address"></result>
+		<result column="total_rent_fee" property="totalRentFee"></result>
+	</resultMap>
+	<select id="queryPropertyInfoForShopsId" resultMap="PropertysMap">
+		select
+		p.propertyname,
+		s.address,
+		sh.total_rent_fee
+		from PROPERTYS p
+		left join SHOPS_HISTORY sh
+		on p.id=sh.propertyid
+		inner join SHOPS s
+		on s.id=sh.base_shopsid
+		where s.historyid=#{shopsId}
+	</select>
+</mapper>

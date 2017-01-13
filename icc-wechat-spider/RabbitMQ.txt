@@ -1,0 +1,74 @@
+安装erlang,配置path
+命令行输入erl 出现版本号即完成
+
+安装rabbitmq
+
+使用Rabbit MQ 管理插件，可以更好的可视化方式查看Rabbit MQ 服务器实例的状态，你可以在命令行中使用下面的命令激活
+F:\company\RabbitMQ Server\rabbitmq_server-3.2.3\sbin>rabbitmqctl.bat enable rabbitmq_management
+要重启服务才能生效，可以执行
+
+F:\company\RabbitMQ Server\rabbitmq_server-3.2.3\sbin>net stop RabbitMQ && net s
+tart RabbitMQ
+RabbitMQ 服务正在停止.
+RabbitMQ 服务已成功停止。
+
+RabbitMQ 服务正在启动 .
+RabbitMQ 服务已经启动成功。
+
+rabbitmqctl控制台命令（位于F:\company\RabbitMQ Server\rabbitmq_server-3.2.3\sbin>）来创建用户，密码，绑定权限等
+
+F:\company\RabbitMQ Server\rabbitmq_server-3.2.3\sbin>rabbitmqctl.bat list_users
+
+Listing users ...
+guest   [administrator]
+...done.
+
+F:\company\RabbitMQ Server\rabbitmq_server-3.2.3\sbin>rabbitmqctl.bat add_user admin admin
+Creating user "admin" ...
+...done.
+
+F:\company\RabbitMQ Server\rabbitmq_server-3.2.3\sbin>rabbitmqctl.bat list_users
+
+Listing users ...
+admin   []
+guest   [administrator]
+...done.
+
+F:\company\RabbitMQ Server\rabbitmq_server-3.2.3\sbin>rabbitmqctl.bat set_user_tags admin administrator
+Setting tags for user "admin" to [administrator] ...
+...done.
+
+F:\company\RabbitMQ Server\rabbitmq_server-3.2.3\sbin>rabbitmqctl.bat set_permissions -p / admin ".*" ".*" ".*"
+Setting permissions for user "admin" in vhost "/" ...
+...done.
+
+F:\company\RabbitMQ Server\rabbitmq_server-3.2.3\sbin>rabbitmqctl.bat list_users
+
+Listing users ...
+admin   [administrator]
+guest   [administrator]
+...done.
+
+进入rabbitmq管理控制台
+F:\company\RabbitMQ Server\rabbitmq_server-3.2.3\sbin>rabbitmq-plugins.bat enable rabbitmq_management
+The following plugins have been enabled:
+  mochiweb
+  webmachine
+  rabbitmq_web_dispatch
+  amqp_client
+  rabbitmq_management_agent
+  rabbitmq_management
+Plugin configuration has changed. Restart RabbitMQ for changes to take effect.
+
+F:\company\RabbitMQ Server\rabbitmq_server-3.2.3\sbin>rabbitmq-service.bat stop
+F:\company\erl6.1\erts-6.1\bin\erlsrv: Failed to stop service RabbitMQ.
+Error: ·þÎñÉÐÎ´Æô¶¯¡£
+
+F:\company\RabbitMQ Server\rabbitmq_server-3.2.3\sbin>rabbitmq-service.bat install
+RabbitMQ service is already present - only updating service parameters
+
+F:\company\RabbitMQ Server\rabbitmq_server-3.2.3\sbin>rabbitmq-service.bat start
+
+F:\company\erl6.1\erts-6.1\bin\erlsrv: Service RabbitMQ started.
+
+http://127.0.0.1:15672

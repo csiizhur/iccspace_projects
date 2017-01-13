@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.icc.dao.UserCollectionDao">
+
+	<resultMap type="com.icc.entity.UserCollection" id="userCollectionMap">
+		<id column="ID" property="Id" />
+		<result column="USERID" property="userId" />
+		<result column="SHOPSID" property="shopsId" />
+		<result column="CREATE_TIME" property="createTime" />
+		<result column="DELETE_TIME" property="deleteTime" />
+		<result column="DELETE_USERID" property="deleteUserId" />
+		<result column="DELETED" property="deleted" />
+	</resultMap>
+
+	<select id="getUsersCollectionShopsListForPage" resultMap="userCollectionMap">
+		select * from
+		USER_COLLECTION where USERID=#{userId}
+	</select>
+	
+	<resultMap type="java.util.Map" id="userCollectionShops">
+		<result column="shopsId" property="shopsId"/>
+		<result column="rent_fee" property="rentFee"/>
+		<result column="totalRentFee" property="totalRentFee"/>
+		<result column="releaseType" property="releaseType"/>
+		<result column="deleted" property="status"/>
+		<result column="sizes" property="sizes"/>
+		<result column="address" property="address"/>
+		<result column="expectBusinessType" property="expectBusinessType"/>
+		<result column="contractRentFee" property="contractRentFee"/>
+		<result column="thumbnailUrl" property="thumbnailUrl"/>
+		<result column="estateType" property="estateType"/>
+		<result column="collectionId" property="collectionId"/>
+		<result column="create_time" property="releaseDate"/>
+	</resultMap>
+	
+	<select id="getUsersCollectionShopsList" resultMap="userCollectionShops">
+	select   
+		sh.id as shopsId,sh.rent_fee,
+		sh.total_rent_fee as totalRentFee,sh.release_type as releaseType,
+		sh.deleted,sh.create_time,
+		s.shop_size as sizes,
+		s.address as address,
+		sh.estates_type as estateType,
+		sh.EXPECT_BUSINESS_TYPE as expectBusinessType,
+		sh.CONTRACT_RENTFEE as contractRentFee,
+		sh.THUMBNAIL_URL as thumbnailUrl,
+		uc.id as collectionId,
+		u.nickName,
+		u.headImg
+	from SHOPS s,SHOPS_HISTORY sh,USER_COLLECTION uc,USER u
+	where uc.userId=#{userId} and uc.shopsid=sh.id and s.historyid=sh.id and uc.shopsid=s.historyid
+		and uc.deleted=0 and u.id=#{userId}
+	</select>
+	
+	<select id="getUsersCollectionRentShops" resultType="java.util.HashMap">
+	select   
+		rs.RENT_ID as rentId,
+		rs.CITYNO cityNo,rs.AREANO areaNo,rs.ADDRESS address,
+		rs.BUSINESSTYPE as businessType,
+		rs.EXPECTSHOPSIZE_MIN as expectShopSizeMin,rs.EXPECTSHOPSIZE_MAX as expectShopSizeMax,
+		rs.EXPECTRENTFEE_MIN expectRentFeeMin,rs.EXPECTRENTFEE_MAX expectRentFeeMax,
+		rs.RENTTREM rentTrem,
+		rs.ESTATESTYPE estatesType,
+		rs.STORIES as stories,
+		rs.RENOVATION as renovation,
+		rs.PARKINGLOT as parkingLot,
+		rs.SUBLETBRAND subletBrand,
+		rs.RELEASE_TYPE releaseType,
+		rs.THUMBNAIL_URL thumbnailUrl,
+		rs.CREATE_TIME releaseDate,
+		rs.USERID releaseUserId,
+		rs.MOBILEPHONE mobilePhone,
+		rs.DELETED as status,
+		uc.id as collectionId,
+		u.nickname nickName,
+		u.HEADIMG headImg
+	from RENT_SHOPS rs,USER_COLLECTION uc,USER u
+	where uc.userId=#{userId} and uc.shopsid=rs.rent_id and uc.deleted=0
+	and u.id=rs.userid
+	</select>
+	
+	<select id="queryIsCollectionShopsByUser" resultType="com.icc.entity.UserCollection">
+		select ID,USERID,SHOPSID,DELETED from USER_COLLECTION where USERID=#{userId} and SHOPSID=#{shopsId}
+	</select>
+	
+	<insert id="insertCollectionShopsByUser">
+		<selectKey keyProperty="id" resultType="String" order="BEFORE">
+			select replace(uuid(),'-','')  from dual 
+		</selectKey>
+		insert into USER_COLLECTION(
+			ID,
+			USERID,
+			SHOPSID,
+			CREATE_TIME,
+			DELETED
+		)
+		values(
+			#{id},
+			#{userId},
+			#{shopsId},
+			now(),
+			0
+		)
+	</insert>
+	
+	<update id="updateOneCollectionShopsByUser">
+		update USER_COLLECTION set DELETED=0 where USERID=#{userId} and SHOPSID=#{shopsId}
+	</update>
+	
+	<update id="updateShopsHistoryCollectionFrequen">
+		update SHOPS_HISTORY
+		set COLLECTION_FREQUEN=COLLECTION_FREQUEN+1
+		where ID=#{shopsId}
+	</update>
+	<update id="updateShopsHistoryCollectionFrequen2">
+		update SHOPS_HISTORY
+		set COLLECTION_FREQUEN=COLLECTION_FREQUEN-1
+		where ID=#{shopsId}
+	</update>
+	
+	<update id="updateRentShopsCollectionFrequen">
+		update RENT_SHOPS
+		set COLLECTION_FREQUEN=COLLECTION_FREQUEN+1
+		where RENT_ID=#{rentId}
+	</update>
+	<update id="updateRentShopsCollectionFrequen2">
+		update RENT_SHOPS
+		set COLLECTION_FREQUEN=COLLECTION_FREQUEN-1
+		where RENT_ID=#{rentId}
+	</update>
+	
+	<update id="deleteCollectionShopsByUser">
+		update USER_COLLECTION set DELETE_TIME=now(),DELETE_USERID=#{deleteUserId},DELETED=1 where ID=#{Id}
+	</update>
+
+	<!-- mysql批量更新  这种方式修改的字段值都是一样的-->
+	<update id="batchDeleteCollectionShopsByUser2" parameterType="java.util.List">
+		update USER_COLLECTION
+		set
+		DELETE_TIME=now(),DELETE_USERID=#{deleteUserId},DELETED=1 where ID in
+		<foreach collection="list" item="item" index="index" open="("
+			separator="," close=")">
+			${item.id}
+		</foreach>
+	</update>
+	
+    <!-- 批量更新 每条数据不同   并且db配置&allowMultiQueries=true-->
+    <update id="batchDeleteCollectionShopsByUser"  parameterType="java.util.List">  
+    	<foreach collection="collectionIds" item="item" index="index" open="" close="" separator=";">
+       		update USER_COLLECTION
+        	<set>
+            	DELETE_TIME=now(),DELETE_USERID=#{deleteUserId},DELETED=1
+        	</set>
+        	where id = ${item.id}
+   		</foreach>      
+	</update>
+	
+	<select id="queryUserIsCollectionShops" resultType="java.lang.String">
+		select ID from USER_COLLECTION where USERID=#{userId} and SHOPSID=#{shopsId} and DELETED=0
+	</select>
+	
+	<update id="deleteOneCollectionShopsByUser">
+		update USER_COLLECTION set deleted=1,DELETE_TIME=now(),DELETE_USERID=#{deleteUserId} where USERID=#{userId} and SHOPSID=#{shopsId}
+	</update>
+</mapper>
