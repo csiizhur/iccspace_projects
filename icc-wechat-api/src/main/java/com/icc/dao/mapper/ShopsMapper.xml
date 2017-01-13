@@ -1,0 +1,655 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.icc.dao.ShopsDao">
+
+	<resultMap type="java.util.Map" id="ShopsMap">
+		<result column="shopsId" property="shopsId" />
+		<result column="shopsType" property="shopsType" />
+		<result column="shopSize" property="shopSize" />
+		<result column="shopAddress" property="shopAddress" />
+		<result column="rentFee" property="rentFee" />
+		<result column="estatesType" property="estatesType" />
+		<result column="estatesFee" property="estatesFee" />
+		<result column="totalRentfee" property="totalRentFee" />
+		<result column="thumbnailUrl" property="thumbnailUrl" />
+		<result column="releaseType" property="releaseType"/>
+		<result column="userId" property="userId"/>
+		<result column="delete" property="delete" />
+		<result column="baseShopsId" property="baseShopsId" />
+		<result column="lat" property="lat" />
+		<result column="lng" property="lng" />
+		<result column="expectBusinessType" property="expectBusinessType" />
+		<result column="contractRentFee" property="contractRentFee" />
+	</resultMap>
+
+	<select id="queryNewShopsList" resultMap="ShopsMap">
+		select s.id as baseShopsId,
+		s.estates_type as shopsType,
+		s.shop_size as shopSize,
+		s.address as shopAddress,
+		sh.rent_fee as rentFee,
+		sh.estates_type as estatesType,
+		sh.estate_fee as estatesFee,
+		sh.total_rent_fee as totalRentfee,
+		sh.thumbnail_url as thumbnailUrl,
+		sh.RELEASE_TYPE as releaseType,
+		sh.USERID as userId,
+		sh.ID as shopsId,
+		sh.EXPECT_BUSINESS_TYPE as expectBusinessType,
+		sh.CONTRACT_RENTFEE as contractRentFee
+		from SHOPS s
+		left join SHOPS_HISTORY sh
+		on s.historyid=sh.id
+		where 1=1 and sh.DELETED=0
+		<if test="listAreaNo!=null">
+		and s.area in
+		<foreach item="item" index="index" collection="listAreaNo" open="(" separator="," close=")">  
+  			#{item}
+ 		</foreach>
+		</if>
+		<if test="estatesTypes!=null">
+		and sh.estates_type in
+		<foreach item="item" index="index" collection="estatesTypes" open="(" separator="," close=")">  
+  			#{item}
+ 		</foreach>
+		</if>
+		<if test="shopMinSize!=null">
+		and s.shop_size>=#{shopMinSize}
+		</if>
+		<if test="shopMaxSize!=null">
+		<![CDATA[and s.shop_size<=#{shopMaxSize}]]>
+		</if>
+		<if test="minRentFee!=null and maxRentFee!=null">
+		<![CDATA[and #{minRentFee}<=sh.rent_fee<=#{maxRentFee}]]>
+		</if>
+		order by sh.create_time desc
+	</select>
+
+	<select id="queryRecommendShopsList" resultMap="ShopsMap">
+		select s.id as baseShopsId,
+		s.estates_type as shopsType,
+		s.shop_size as shopSize,
+		s.address as shopAddress,
+		s.is_show,
+		sh.rent_fee as rentFee,
+		sh.estates_type as estatesType,
+		sh.total_rent_fee as totalRentfee,
+		sh.thumbnail_url as thumbnailUrl,
+		sh.RELEASE_TYPE as releaseType,
+		sh.ID as shopsId
+		from SHOPS s
+		inner join SHOPS_HISTORY sh
+		on s.historyid=sh.id or s.is_show=1
+		where sh.DELETED=0
+		order by sh.create_time desc
+	</select>
+	
+	<update id="updateShopsUserClick">
+		<![CDATA[ update SHOPS_HISTORY set user_click=${userClick} where id=#{shopsId}]]>
+	</update>
+	<select id="queryHotSearchShopsList" resultMap="ShopsMap" parameterType="Integer[]">
+		select s.id as baseShopsId,
+		s.estates_type as shopsType,
+		s.shop_size as shopSize,
+		s.address as shopAddress,
+		sh.rent_fee as rentFee,
+		sh.estates_type as estatesType,
+		sh.estate_fee as estatesFee,
+		sh.total_rent_fee as totalRentfee,
+		sh.thumbnail_url as thumbnailUrl,
+		sh.RELEASE_TYPE as releaseType,
+		sh.USERID as userId,
+		sh.ID as shopsId,
+		sh.EXPECT_BUSINESS_TYPE as expectBusinessType,
+		sh.CONTRACT_RENTFEE as contractRentFee
+		from 
+		SHOPS s inner join SHOPS_HISTORY sh on s.historyid=sh.id
+		where 1=1 and sh.DELETED=0
+		<if test="array!=null and array!=''">
+			and sh.release_type in
+			<foreach collection="array" item="item" index="index" open="(" separator="," close=")">
+				<if test="item!=0 ">
+				#{item}
+				</if>
+			</foreach>
+		</if>
+		<if test="areaNoList!=null">
+			and s.area in
+			<foreach collection="areaNoList" item="item" index="index" open="(" separator="," close=")">
+				<if test="item!=null">
+				#{item}
+				</if>
+			</foreach>
+		</if>
+		<if test="estatesTypeList!=null">
+			and sh.estates_type in
+			<foreach collection="estatesTypeList" item="item" index="index" open="(" separator="," close=")">
+				<if test="item!=null">
+				#{item}
+				</if>
+			</foreach>
+		</if>
+		<if test="minSize!=null and maxSize!=null and minSize!=0.0 and maxSize!=0.0">
+			<![CDATA[and (#{minSize}<=s.shop_size and s.shop_size<=#{maxSize})]]> 
+		</if>
+		<if test="minRentFee!=null and maxRentFee!=null">
+			<![CDATA[and (#{minRentFee}<=sh.rent_fee and sh.rent_fee<=#{maxRentFee})]]>
+		</if>
+		order by sh.user_click desc
+	</select>
+	
+	<select id="queryShopsListBySearch" resultMap="ShopsMap">
+		select s.id as baseShopsId,
+		s.estates_type as shopsType,
+		s.shop_size as shopSize,
+		s.address as shopAddress,
+		s.is_show,
+		s.lat,s.lng,
+		sh.rent_fee as rentFee,
+		sh.estates_type as estatesType,
+		sh.estate_fee as estatesFee,
+		sh.total_rent_fee as totalRentfee,
+		sh.thumbnail_url as thumbnailUrl,
+		sh.ID as shopsId
+		from SHOPS s
+		left join SHOPS_HISTORY sh
+		on s.HISTORYID=sh.id
+		where 1=1
+		<if test="areaName!=null">
+				<![CDATA[and s.AREA in (select areano from AREA_INFO where areaname like '%' ||#{areaName}|| '%')]]>
+		</if>
+		<if test="streetName!=null">
+			and s.street in (select streetno from STREET_INFO where streetname like
+			CONCAT('%','${streetName}','%') )
+		</if>
+		<if test="shopsName!=null">
+			and sh.shops_name like CONCAT('%','${shopsName}','%')
+		</if>
+		<if test="shopsSize!=null">
+			    <![CDATA[and (s.shop_size=#{shopsSize} or s.shop_size >=#{shopsSize}-10 or s.shop_size <=#{shopsSize}+10)]]>
+		</if>
+	</select>
+	<select id="queryShopsListBySearch1" resultMap="ShopsMap">
+		select s.id as shopsId,
+		s.estates_type as shopsType,
+		s.shop_size as shopSize,
+		s.address as shopAddress,
+		s.is_show,
+		sh.rent_fee as rentFee,
+		sh.estates_type as estatesType,
+		sh.total_rent_fee as totalRentfee,
+		sh.thumbnail_url as thumbnailUrl
+		from SHOPS s
+		left join SHOPS_HISTORY sh
+		on s.HISTORYID=sh.id
+		where 1=1
+		<if test="areaName!=null">
+			and s.AREA in (select areano from area_info where areaname like
+			'%#{areaName}%')
+		</if>
+		<if test="streetName!=null">
+			and s.street in (select streetno from street_info where streetname like
+			CONCAT('%','${streetName}','%') )
+		</if>
+		<if test="shopsName!=null">
+			and sh.shops_name like CONCAT('%','${shopsName}','%')
+		</if>
+		<if test="shopsSize!=null">
+			and s.shop_size=#{shopsSize} or s.shop_size &gt;=#{shopsSize}-10 AND
+			s.shop_size &lt;=#{shopsSize}+10
+		</if>
+	</select>
+	<!-- &gt;> &lt; < -->
+	<!-- 发布商铺步骤 1,查询主表是否存在，不存在直接insert主表，子表,否则update主表,insert子表 -->
+	<resultMap type="java.util.Map" id="queryShopMap">
+		<result column="c" property="c" />
+		<result column="id" property="id" />
+	</resultMap>
+	<select id="queryBaseShopsInfoUnique" resultType="java.lang.String">
+		select ID from SHOPS where address_unique=#{addressUnique}
+	</select>
+	<insert id="insertBaseRentShopInformationRelease">
+		insert into
+		SHOPS(
+		id,
+		historyid,
+		shop_size,
+		city,
+		area,
+		street,
+		address,
+		estates_type,
+		create_time,
+		deleted,
+		address_unique,
+		lat,
+		lng
+		)
+		values(
+		#{Id},
+		#{historyId},
+		#{shopSize},
+		#{cityNo},
+		#{areaNo},
+		#{streetNo},
+		#{address},
+		#{estatesType},
+		now(),
+		#{deleted},
+		#{addressUnique},
+		#{lat},
+		#{lng}
+		)
+	</insert>
+	<insert id="insertRentHistoryShopInformationRelease">
+		insert into
+		SHOPS_HISTORY(
+		<if test="id!=null">id,</if>
+		base_shopsid,
+		shops_name,
+		shops_brand,
+		rent_type,
+		rent_fee,
+		total_rent_fee,
+		rent_trem,
+		expect_business_type,
+		estate_fee,
+		estates_type,
+		release_time,
+		userid,
+		release_status,
+		thumbnail_url,
+		create_time,
+		shops_unique,
+		release_type,
+		currentshop_status,expect_rentfee,expect_rentfee_min,expect_rentfee_max,
+		rent_brand,rent_time,floor,openroom,stories,columnsbetween,depth,currentshopbusiness_type,
+		surpluslease_trem,contract_enddate,contract_rentfee,sharerentmodel,splitrent_fee,mobilephone,
+		renovation,parking_lot,tenant_product_require,sublet_brand,sublet_mode,sublet_fee,sublet_reason,
+		EXPECT_SHOPSIZE,BUSINESS_TYPE,EQUIPMENTLIST,WEEKORMONTH,WEEKORMONTHDATA,RENTVAILABLESIZE
+		)
+		values(
+		<if test="id!=null">#{id},</if>
+		#{baseShopsId},
+		#{shopsName},#{shopsBrand},#{rentType},#{rentFee},#{totalRentFee},#{rentTrem},
+		#{expectBusinessType},#{estateFee},#{estatesType},now(),#{userId},
+		#{releaseStatus},#{thumbnailURL},now(),#{shopsUnique},#{releaseType},
+		#{currentShopStatus},#{expectRentFee},#{expectRentFeeMin},#{expectRentFeeMax},
+		#{rentBrand},#{rentTime},#{floor},#{openRoom},#{stories},#{columnsBetween},#{depth},#{currentShopBusinessType},
+		#{surplusLeaseTrem},#{contractEndDate},#{contractRentFee},#{shareRentModel},#{splitRentFee},#{mobilePhone},
+		#{renovation},#{parkingLot},#{tenantProductRequire},#{subletBrand},#{subletMode},#{subletFee},#{subletReason},
+		#{expectShopSize},#{businessType},#{equipmentList},#{weekOrMonthType},#{weekOrMonthData},#{rentVailableSize}
+		)
+	</insert>
+	<update id="updateBaseRentShopInformationRelease">
+		update SHOPS
+		set historyid=#{historyId},update_time=now(),lat=#{lat},lng=#{lng},city=#{cityNo},area=#{areaNo},address=#{address}
+		where address_unique=#{addressUnique} and ID=#{baseShopsId}
+	</update>
+	<resultMap type="java.util.Map" id="ShopsDetailMap">
+		<result column="releaseUserId" property="userId"/>
+		<result column="city" property="city"></result>
+		<result column="area" property="area"></result>
+		<result column="CURRENTSHOP_STATUS" property="currentShopStatus"></result>
+		<result column="shop_size" property="shopSize"></result>
+		<result column="address" property="shopAddress"></result>
+		<result column="estates_type" property="estatesType"></result>
+		<result column="estate_fee" property="estatesFee"></result>
+		<result column="shops_name" property="shopName"></result>
+		<result column="shops_brand" property="shopBrand"></result>
+		<result column="rent_type" property="rentType"></result>
+		<result column="rent_fee" property="rentFee"></result>
+		<result column="total_rent_fee" property="totalRentFee"></result>
+		<result column="rent_trem" property="rentTrem"></result>
+		<result column="expect_business_type" property="expectBusinessType"></result>
+		<result column="release_type" property="releaseType"></result>
+		<result column="baseShopsId" property="baseShopsId"></result>
+		<result column="image_url1" property="ImgUrlOne"></result>
+		<result column="image_url2" property="ImgUrlTwo"></result>
+		<result column="image_url3" property="ImgUrlThrid"></result>
+		<result column="user_click" property="userClick" ></result>
+		<result column="shopsId" property="shopsId"></result>
+		<result column="userid" property="commentUserId"></result>
+		<result column="comments_time" property="commentsTime"></result>
+		<result column="comments_content" property="commentsContent"></result>
+		<result column="reply_userid" property="replyUserId"></result>
+		<result column="version" property="version"></result>
+		<result column="thumbnail_url" property="thumbnailUrl"></result>
+		<result column="lat" property="lat"></result>
+		<result column="lng" property="lng"></result>
+		<result column="COLLECTION_FREQUEN" property="collectionFrequen"></result>
+		<result column="FORWARD_FREQUEN" property="forwardFrequen"></result>
+		<result column="COMMENTS_FREQUEN" property="commentsFrequen"></result>
+		<result column="MOBILEPHONE" property="mobilePhone"></result>
+		<result column="floor" property="floor"></result>
+		<result column="openroom" property="openRoom"></result>
+		<result column="stories" property="stories"></result>
+		<result column="columnsbetween" property="columnsBetween"></result>
+		<result column="depth" property="depth"></result>
+		<result column="SUBLET_FEE" property="subletFee"/>
+		<result column="SUBLET_MODE" property="subletMode"/>
+		<result column="SUBLET_REASON" property="subletReason"/>
+		<result column="CONTRACT_RENTFEE" property="contractRentFee"/>
+		<result column="CONTRACT_ENDDATE" property="contractEndDate"/>
+		<result column="SHARERENTMODEL" property="shareRentModel"/>
+		<result column="SPLITRENT_FEE" property="splitRentFee"/>
+		<result column="CREATE_TIME" property="releaseDate"/>
+		<result column="EQUIPMENTLIST" property="equipmentList"/>
+		<result column="WEEKORMONTH" property="weekOrMonthType"/>
+		<result column="WEEKORMONTHDATA" property="weekOrMonthData"/>
+		<result column="RENTVAILABLESIZE" property="rentVailableSize"/>
+	</resultMap>
+	<select id="queryShopInformationByUserId" resultMap="ShopsDetailMap">
+		select s.id as baseShopsId,
+		s.shop_size,s.address,sh.estates_type,sh.estate_fee,
+		sh.shops_name,sh.shops_brand,sh.rent_type,sh.rent_fee,sh.total_rent_fee,sh.rent_trem,sh.expect_business_type,
+		sh.RELEASE_TYPE as release_type,sh.id as shopsId,sh.thumbnail_url,
+		sh.SHARERENTMODEL,sh.SPLITRENT_FEE,sh.CREATE_TIME,
+		sh.CONTRACT_ENDDATE,sh.CONTRACT_RENTFEE,sh.SUBLET_MODE,sh.SUBLET_FEE,sh.SUBLET_REASON
+		from SHOPS s
+		left join SHOPS_HISTORY sh
+		on s.historyid=sh.ID
+		where sh.USERID=#{userId} and sh.deleted=0 order by sh.create_time desc
+	</select>
+	
+	<update id="deleteReleaseShopsByShopsIdForUser">
+		update SHOPS_HISTORY
+		set DELETED=1,DELETED_USERID=#{userId}
+		where ID=#{shopsId}
+	</update>
+	<!-- 物业发布 -->
+	<select id="queryShopsInfoById" resultMap="ShopsDetailMap">
+		select
+		sh.USERID releaseUserId,
+		s.city,s.area,sh.CURRENTSHOP_STATUS,
+		s.shop_size,s.address,s.lng,s.lat,
+		sh.estates_type,sh.estate_fee,
+		sh.floor,sh.openroom,sh.stories,sh.columnsbetween,sh.depth,
+		sh.shops_name,sh.shops_brand,sh.rent_type,sh.rent_fee,sh.total_rent_fee,sh.rent_trem,sh.expect_business_type,
+		sh.release_type as releaseType,sh.user_click,s.id as baseShopsId,sh.id as shopsId,sh.version,
+		sh.COLLECTION_FREQUEN,sh.FORWARD_FREQUEN,sh.COMMENTS_FREQUEN,sh.MOBILEPHONE,
+		sh.SUBLET_FEE,sh.SUBLET_MODE,sh.SUBLET_REASON,sh.CONTRACT_RENTFEE,date_format(sh.CONTRACT_ENDDATE,'%Y-%m') as CONTRACT_ENDDATE,
+		sh.SHARERENTMODEL,sh.SPLITRENT_FEE,date_format(sh.CREATE_TIME,'%Y-%m-%d') as CREATE_TIME,
+		sh.EQUIPMENTLIST,sh.WEEKORMONTH,sh.WEEKORMONTHDATA,sh.RENTVAILABLESIZE
+		from SHOPS s
+		left join SHOPS_HISTORY sh
+		on s.historyid=sh.id
+		where
+		s.historyid=#{shopsId}
+	</select>
+
+	<!-- CLASSCASTEXCEPTION -->
+	<!-- <select id="queryShopsInfoById1" parameterType="java.lang.String"
+		resultMap="ShopAndPhotoResultMap">
+		select a.id as id, spi.id as photosId,spi.image_url1 as image_URL1
+ 		from (select sh.id,
+				s.shop_size,s.address,s.estates_type,
+				sh.shops_name,sh.shops_brand,sh.rent_type,sh.rent_fee,sh.total_rent_fee,sh.rent_trem,sh.expect_business_type,
+				sh.user_click,s.historyid,sh.version
+		from SHOPS s
+		left join SHOPS_HISTORY sh
+		on s.historyid=sh.id
+		left join SHOPS_COMMENTS sc
+		on sc.shopsid=sh.id
+		where s.historyid=#{shopsId}) a,SHOPS_PHOTOS_INFO spi
+		where spi.shopsid=a.id
+	</select>
+	<resultMap type="com.icc.entity.ShopsHistory" id="ShopAndPhotoResultMap">
+		<id property="id" column="id" />
+		ofType指定students集合中的对象类型
+		<collection property="photos" ofType="com.icc.entity.ShopsPhotosInfo">
+			<id property="id" column="photosId" />
+			<result property="imageURL1" column="image_URL1" />
+		</collection>
+	</resultMap> -->
+	
+	<!--多字段打分排序 -->
+	<select id="queryRecommendShopsBySort" resultType="java.util.Map">
+		SELECT s.id as baseShopsId,s.historyid as shopsId,s.address as shopAddress,sh.estates_type as estatesType,sh.estate_fee as estatesFee,s.shop_size shopSize,
+		sh.rent_type as rentType,sh.rent_fee rentFee,sh.total_rent_fee totalRentFee,sh.thumbnail_url thumbnailUrl,sh.release_type releaseType,
+		sh.EXPECT_BUSINESS_TYPE as expectBusinessType,
+		sh.CONTRACT_RENTFEE as contractRentFee,
+		(
+		<if test="userId!=null">
+			0
+		</if>
+		<if test="city!=null">
+			+(case when s.city=#{city} >0 then 4 else 0 end)
+		</if>
+		<if test="area!=null">
+			+(case when s.area=#{area} >0 then 3 else 0 end)
+		</if>
+		<if test="street!=null">
+			+(case when s.street=#{street} >0 then 2 else 0 end)
+		</if>
+		<if test="address!=null and address!=''">
+			+(CASE WHEN s.ADDRESS LIKE '%${address}%' >0 then
+			1 else 0 end)
+		</if>
+		<if test="shopSize!=0.0">
+			<![CDATA[+(case when s.shop_size=#{shopSize} >0 then 5 
+				when (#{shopSize}*0.9<=s.shop_size<=#{shopSize}*1.1) >0 then 4.5
+				when s.shop_size>=#{shopSize}*0.8 and s.shop_size<=#{shopSize}*1.2 then 4
+				when s.shop_size>=#{shopSize}*0.7 and s.shop_size<=#{shopSize}*1.3 then 3.5
+				when s.shop_size>=#{shopSize}*0.6 and s.shop_size<=#{shopSize}*1.4 then 3
+			else 0 end
+			)]]>
+		</if>
+		<if test="businessType!=null">
+			+(case when sh.EXPECT_BUSINESS_TYPE =#{businessType} then 3 else 0 end)
+		</if>
+		<if test="rentFee!=null">
+			<![CDATA[+(case when sh.rent_fee=#{rentFee} >0 then 2]]>		
+			<![CDATA[when sh.rent_fee<=(#{rentFee}*1.1) and sh.rent_fee>=(#{rentFee}*0.9)  then 1.8 ]]>		
+			<![CDATA[when sh.rent_fee<=(#{rentFee}*1.2) and sh.rent_fee>=(#{rentFee}*0.8)  then 1.6 ]]>		
+			<![CDATA[when sh.rent_fee<=(#{rentFee}*1.3) and sh.rent_fee>=(#{rentFee}*0.7)  then 1.4 ]]>
+			<![CDATA[when sh.rent_fee<=(#{rentFee}*1.4) and sh.rent_fee>=(#{rentFee}*0.6)  then 1.2 else 0 end)]]>
+		</if>
+		<if test="expectShopSizeMin!=null">
+			<![CDATA[+(case when s.shop_size=#{expectShopSizeMin} >0 then 5]]>		
+			<![CDATA[when s.shop_size>=#{expectShopSizeMin}*1.1  then 4.5 ]]>		
+			<![CDATA[when s.shop_size>=#{expectShopSizeMin}*1.2  then 4 ]]>		
+			<![CDATA[when s.shop_size>=#{expectShopSizeMin}*1.3  then 3.5 ]]>
+			<![CDATA[when s.shop_size>=#{expectShopSizeMin}*1.4  then 3 else 0 end)]]>
+		</if>
+		<if test="expectShopSizeMax!=null">
+			<![CDATA[+(case when s.shop_size=#{expectShopSizeMax} >0 then 5]]>		
+			<![CDATA[when s.shop_size<=#{expectShopSizeMax}*0.9 then 4.5 ]]>
+			<![CDATA[when s.shop_size<=#{expectShopSizeMax}*0.8 then 4 ]]>		
+			<![CDATA[when s.shop_size<=#{expectShopSizeMax}*0.7 then 3.5 ]]>
+			<![CDATA[when s.shop_size<=#{expectShopSizeMax}*0.6 then 3 else 0 end)]]>
+		</if>
+		<if test="expectRentFeeMin!=null">
+			<![CDATA[+(case when sh.rent_fee=#{expectRentFeeMin} >0 then 2]]>		
+			<![CDATA[when  sh.rent_fee>=(#{expectRentFeeMin}*1.1)  then 1.8 ]]>		
+			<![CDATA[when  sh.rent_fee>=(#{expectRentFeeMin}*1.2)  then 1.6 ]]>		
+			<![CDATA[when  sh.rent_fee>=(#{expectRentFeeMin}*1.3)  then 1.4 ]]>
+			<![CDATA[when  sh.rent_fee>=(#{expectRentFeeMin}*1.4)  then 1.2 else 0 end)]]>
+		</if>
+		<if test="expectRentFeeMax!=null">
+			<![CDATA[+(case when sh.rent_fee=#{expectRentFeeMax} >0 then 2]]>		
+			<![CDATA[when sh.rent_fee<=(#{expectRentFeeMax}*0.9)   then 1.8 ]]>		
+			<![CDATA[when sh.rent_fee<=(#{expectRentFeeMax}*0.8)   then 1.6 ]]>		
+			<![CDATA[when sh.rent_fee<=(#{expectRentFeeMax}*0.7)   then 1.4 ]]>
+			<![CDATA[when sh.rent_fee<=(#{expectRentFeeMax}*0.6)   then 1.2 else 0 end)]]>
+		</if>
+		<![CDATA[) as shopSorts
+		FROM SHOPS s
+		left join SHOPS_HISTORY sh
+		on sh.base_shopsid=s.id and sh.id=s.historyid
+		WHERE 1=1 and sh.DELETED=0]]>
+		<if test="city!=null">
+			and s.city=#{city}
+		</if>
+		<if test="area!=null">
+			and s.area=#{area}
+		</if>
+		<if test="street!=null">
+			and s.street=#{street}
+		</if>
+		<if test="address!=null and address!=''">
+			<!-- and s.address like '%' ||#{address}|| '%' --> <!-- Oracle -->
+			<!-- and s.address like concat('%','${address}','%') --> <!-- Mysql -->
+			<!-- and s.address like '%${address}%' --> <!-- 控制台没有params参数 -->
+			<![CDATA[ and s.address like CONCAT('%',#{address},'%') ]]>
+		</if>
+		<if test="shopSize!=0.0">
+			<![CDATA[ and (s.shop_size>=(#{shopSize}*0.6) and s.shop_size<=#{shopSize}*1.4) ]]>
+		</if>
+		<if test="businessType!=null">
+			<![CDATA[ and sh.EXPECT_BUSINESS_TYPE=#{businessType}]]>
+		</if>
+		<if test="rentFee!=null">
+			<![CDATA[ and sh.rent_fee>=(#{rentFee}*0.6) and sh.rent_fee<=#{rentFee}*1.4]]>
+		</if>
+		<if test="expectShopSizeMin!=null">
+			<![CDATA[ and s.shop_size>=(#{expectShopSizeMin}) ]]>
+		</if>
+		<if test="expectShopSizeMax!=null">
+			<![CDATA[ and s.shop_size<=(#{expectShopSizeMax}) ]]>
+		</if>
+		<if test="expectRentFeeMin!=null">
+			<![CDATA[ and sh.rent_fee>=#{expectRentFeeMin}]]>
+		</if>
+		<if test="expectRentFeeMax!=null">
+			<![CDATA[ and sh.rent_fee<=#{expectRentFeeMax}]]>
+		</if>
+		<![CDATA[ order by shopSorts desc]]>
+
+	</select>
+	<select id="queryRecommendShopsBySortNoBusiness" resultType="java.util.Map">
+		select * from(SELECT s.id as baseShopsId,s.historyid as shopsId,s.address as shopAddress,sh.estates_type as estatesType,sh.estate_fee as estatesFee,s.shop_size shopSize,
+		sh.rent_type as rentType,sh.rent_fee rentFee,sh.total_rent_fee totalRentFee,sh.thumbnail_url thumbnailUrl,sh.release_type releaseType,
+		sh.EXPECT_BUSINESS_TYPE as expectBusinessType,
+		sh.CONTRACT_RENTFEE as contractRentFee,
+		(
+		<if test="userId!=null">
+			0
+		</if>
+		<if test="address!=null and address!=''">
+			+case when s.address=#{address} then 1.5 else 0 end
+			+(CASE WHEN s.ADDRESS LIKE '%${address}%' >0 then 1 else 0 end)
+		</if>
+		<if test="businessType!=null">
+			+(case when sh.EXPECT_BUSINESS_TYPE =#{businessType} then 2.5 else 0 end)
+		</if>
+		<if test="expectShopSizeMin!=null">
+			<![CDATA[+(case when s.shop_size=#{expectShopSizeMin} >0 then 1 else 0 end]]>		
+			<![CDATA[+ case when s.shop_size>=#{expectShopSizeMin}*1.1  then 0.6 else 0 end]]>		
+			<![CDATA[+ case when s.shop_size>=#{expectShopSizeMin}*1.2  then 0.4 else 0 end]]>		
+			<![CDATA[+ case when s.shop_size>=#{expectShopSizeMin}*1.3  then 0.3 else 0 end]]>
+			<![CDATA[+ case when s.shop_size>=#{expectShopSizeMin}*1.4  then 0.2 else 0 end)]]>
+		</if>
+		<if test="expectShopSizeMax!=null">
+			<![CDATA[+(case when s.shop_size=#{expectShopSizeMax} >0 then 1 else 0 end]]>		
+			<![CDATA[+ case when s.shop_size<=#{expectShopSizeMax}*0.9 then 0.6 else 0 end]]>
+			<![CDATA[+ case when s.shop_size<=#{expectShopSizeMax}*0.8 then 0.4 else 0 end]]>		
+			<![CDATA[+ case when s.shop_size<=#{expectShopSizeMax}*0.7 then 0.3 else 0 end]]>
+			<![CDATA[+ case when s.shop_size<=#{expectShopSizeMax}*0.6 then 0.2 else 0 end)]]>
+		</if>
+		<if test="expectRentFeeMin!=null">
+			<![CDATA[+(case when sh.rent_fee=#{expectRentFeeMin} >0 then 1 else 0 end]]>		
+			<![CDATA[+ case when  sh.rent_fee>=(#{expectRentFeeMin}*1.1)  then 0.6 else 0 end]]>		
+			<![CDATA[+ case when  sh.rent_fee>=(#{expectRentFeeMin}*1.2)  then 0.4 else 0 end]]>		
+			<![CDATA[+ case when  sh.rent_fee>=(#{expectRentFeeMin}*1.3)  then 0.3 else 0 end]]>
+			<![CDATA[+ case when  sh.rent_fee>=(#{expectRentFeeMin}*1.4)  then 0.2 else 0 end)]]>
+		</if>
+		<if test="expectRentFeeMax!=null">
+			<![CDATA[+(case when sh.rent_fee=#{expectRentFeeMax} >0 then 1 else 0 end]]>		
+			<![CDATA[+ case when sh.rent_fee<=(#{expectRentFeeMax}*0.9)   then 0.6 else 0 end]]>		
+			<![CDATA[+ case when sh.rent_fee<=(#{expectRentFeeMax}*0.8)   then 0.4 else 0 end]]>		
+			<![CDATA[+ case when sh.rent_fee<=(#{expectRentFeeMax}*0.7)   then 0.3 else 0 end]]>
+			<![CDATA[+ case when sh.rent_fee<=(#{expectRentFeeMax}*0.6)   then 0.2 else 0 end)]]>
+		</if>
+		<![CDATA[) as shopSorts
+		FROM SHOPS s
+		left join SHOPS_HISTORY sh
+		on sh.base_shopsid=s.id and sh.id=s.historyid
+		WHERE 1=1 and sh.DELETED=0 and sh.userid!=#{userId} and (sh.rent_fee regexp "[u0391-uFFE5]") and (s.shop_size regexp "[\u0391-\uFFE5]"))A]]>
+		<![CDATA[where A.shopSorts>4 order by A.shopSorts desc]]>
+	</select>
+	<select id="queryRecommendShopsBySortNoBusiness2" resultType="java.util.Map">
+		SELECT s.id as baseShopsId,s.historyid as shopsId,s.address as shopAddress,sh.estates_type as estatesType,sh.estate_fee as estatesFee,s.shop_size shopSize,
+		sh.rent_type as rentType,sh.rent_fee rentFee,sh.total_rent_fee totalRentFee,sh.thumbnail_url thumbnailUrl,sh.release_type releaseType,
+		sh.EXPECT_BUSINESS_TYPE as expectBusinessType,
+		sh.CONTRACT_RENTFEE as contractRentFee,
+		(
+		<if test="userId!=null">
+			0
+		</if>
+		<if test="city!=null">
+			+(case when s.city=#{city} >0 then 4 else 0 end)
+		</if>
+		<if test="area!=null">
+			+(case when s.area=#{area} >0 then 3 else 0 end)
+		</if>
+		<if test="address!=null and address!=''">
+			+(CASE WHEN s.ADDRESS LIKE '%${address}%' >0 then
+			1 else 0 end)
+		</if>
+		<if test="businessType!=null">
+			+(case when sh.EXPECT_BUSINESS_TYPE =#{businessType} then 3 else 0 end)
+		</if>
+		<if test="expectShopSizeMin!=null">
+			<![CDATA[+(case when s.shop_size=#{expectShopSizeMin} >0 then 5]]>		
+			<![CDATA[when s.shop_size>=#{expectShopSizeMin}*1.1  then 4.5 ]]>		
+			<![CDATA[when s.shop_size>=#{expectShopSizeMin}*1.2  then 4 ]]>		
+			<![CDATA[when s.shop_size>=#{expectShopSizeMin}*1.3  then 3.5 ]]>
+			<![CDATA[when s.shop_size>=#{expectShopSizeMin}*1.4  then 3 else 0 end)]]>
+		</if>
+		<if test="expectShopSizeMax!=null">
+			<![CDATA[+(case when s.shop_size=#{expectShopSizeMax} >0 then 5]]>		
+			<![CDATA[when s.shop_size<=#{expectShopSizeMax}*0.9 then 4.5 ]]>
+			<![CDATA[when s.shop_size<=#{expectShopSizeMax}*0.8 then 4 ]]>		
+			<![CDATA[when s.shop_size<=#{expectShopSizeMax}*0.7 then 3.5 ]]>
+			<![CDATA[when s.shop_size<=#{expectShopSizeMax}*0.6 then 3 else 0 end)]]>
+		</if>
+		<if test="expectRentFeeMin!=null">
+			<![CDATA[+(case when sh.rent_fee=#{expectRentFeeMin} >0 then 2]]>		
+			<![CDATA[when  sh.rent_fee>=(#{expectRentFeeMin}*1.1)  then 1.8 ]]>		
+			<![CDATA[when  sh.rent_fee>=(#{expectRentFeeMin}*1.2)  then 1.6 ]]>		
+			<![CDATA[when  sh.rent_fee>=(#{expectRentFeeMin}*1.3)  then 1.4 ]]>
+			<![CDATA[when  sh.rent_fee>=(#{expectRentFeeMin}*1.4)  then 1.2 else 0 end)]]>
+		</if>
+		<if test="expectRentFeeMax!=null">
+			<![CDATA[+(case when sh.rent_fee=#{expectRentFeeMax} >0 then 2]]>		
+			<![CDATA[when sh.rent_fee<=(#{expectRentFeeMax}*0.9)   then 1.8 ]]>		
+			<![CDATA[when sh.rent_fee<=(#{expectRentFeeMax}*0.8)   then 1.6 ]]>		
+			<![CDATA[when sh.rent_fee<=(#{expectRentFeeMax}*0.7)   then 1.4 ]]>
+			<![CDATA[when sh.rent_fee<=(#{expectRentFeeMax}*0.6)   then 1.2 else 0 end)]]>
+		</if>
+		<![CDATA[) as shopSorts
+		FROM SHOPS s
+		left join SHOPS_HISTORY sh
+		on sh.base_shopsid=s.id and sh.id=s.historyid
+		WHERE 1=1 and sh.DELETED=0]]>
+		<if test="city!=null">
+			and s.city=#{city}
+		</if>
+		<if test="area!=null">
+			and s.area=#{area}
+		</if>
+		<if test="address!=null and address!=''">
+			<![CDATA[ or s.address like CONCAT('%',#{address},'%') ]]>
+		</if>
+		<if test="businessType!=null">
+			<![CDATA[ or sh.EXPECT_BUSINESS_TYPE=#{businessType}]]>
+		</if>
+		<if test="expectShopSizeMin!=null">
+			<![CDATA[ or s.shop_size>=(#{expectShopSizeMin}) ]]>
+		</if>
+		<if test="expectShopSizeMax!=null">
+			<![CDATA[ or s.shop_size<=(#{expectShopSizeMax}) ]]>
+		</if>
+		<if test="expectRentFeeMin!=null">
+			<![CDATA[ or sh.rent_fee>=#{expectRentFeeMin}]]>
+		</if>
+		<if test="expectRentFeeMax!=null">
+			<![CDATA[ or sh.rent_fee<=#{expectRentFeeMax}]]>
+		</if>
+		<![CDATA[ order by shopSorts desc]]>
+	</select>
+</mapper>

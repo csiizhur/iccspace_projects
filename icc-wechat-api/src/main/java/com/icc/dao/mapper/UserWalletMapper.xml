@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.icc.dao.UserWalletDao">
+
+	<resultMap type="com.icc.entity.UserWallet" id="userWalletMap">
+		<id column="id" property="Id" />
+		<result column="USERID" property="userId" />
+		<result column="ICCB" property="ICCB" />
+		<result column="STATUS" property="status" />
+		<result column="DELETED" property="deleted" />
+	</resultMap>
+
+	<select id="getUsersWalletInfo" resultMap="userWalletMap">
+		select 
+			ID,USERID,ICCB,STATUS,DELETED
+		from
+		USER_WALLET where userid=#{userId}
+	</select>
+	
+	
+	
+	<insert id="insertUsersInfo">
+		<selectKey keyProperty="Id" resultType="String" order="BEFORE">  
+        select  replace(uuid(),'-','')   from dual  
+    	</selectKey>
+		insert into USER(id,openid) values(#{Id},#{openId});
+	</insert>
+	
+</mapper>

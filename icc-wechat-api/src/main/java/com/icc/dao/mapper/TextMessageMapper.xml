@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.icc.dao.TextMessageDao">
+
+	<insert id="insertTextMessage">
+		<selectKey keyProperty="id" resultType="String" order="BEFORE">
+			select replace(uuid(),'-','')  from dual
+		</selectKey>
+		<![CDATA[
+			insert into WEIXIN_TEXTMSG(
+				id,
+				keyword,
+				text_content,
+				create_user,
+				create_time,
+				deleted
+			)
+			values(
+				#{id},
+				#{keyWord},
+				#{textContent},
+				#{createUser},
+				#{createTime},
+				0
+			)
+		]]>
+	</insert>
+	
+	<select id="queryKeyWordForReply" resultType="String">
+		select text_content from WEIXIN_TEXTMSG where keyword=#{keyWord}
+		<if test="deleted!=null">
+			and deleted=#{deleted}
+		</if>
+	</select>
+</mapper>

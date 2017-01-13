@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.icc.dao.UserLeaveMessageDao">
+	
+	<insert id="insertUserLeaveMessage">
+		<selectKey order="BEFORE" resultType="String" keyProperty="leaveMsgId">
+			select replace(uuid(),'-','') from dual
+		</selectKey>
+		insert into USER_LEAVE_MESSAGE(
+			MSG_ID,
+			FROM_USERID,
+			MSG_CONTENT,
+			CREATE_TIME,
+			DELETED
+		)
+		values(
+			#{leaveMsgId},
+			#{fromUserId},
+			#{msgContent},
+			now(),
+			0
+		)
+	</insert>
+</mapper>

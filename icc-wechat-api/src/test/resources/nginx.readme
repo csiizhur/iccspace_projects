@@ -1,0 +1,131 @@
+
+tar -zxvf nginx-1.6.3.tar.gz
+
+[root@iZuf6ayj54m6qqykp29r2bZ nginx-1.6.3]# yum -y install pcre-devel
+
+[root@iZuf6ayj54m6qqykp29r2bZ nginx-1.6.3]# ./configure
+
+Configuration summary
+  + using system PCRE library
+  + OpenSSL library is not used
+  + md5: using system crypto library
+  + sha1: using system crypto library
+  + using system zlib library
+
+  nginx path prefix: "/usr/local/nginx"
+  nginx binary file: "/usr/local/nginx/sbin/nginx"
+  nginx configuration prefix: "/usr/local/nginx/conf"
+  nginx configuration file: "/usr/local/nginx/conf/nginx.conf"
+  nginx pid file: "/usr/local/nginx/logs/nginx.pid"
+  nginx error log file: "/usr/local/nginx/logs/error.log"
+  nginx http access log file: "/usr/local/nginx/logs/access.log"
+  nginx http client request body temporary files: "client_body_temp"
+  nginx http proxy temporary files: "proxy_temp"
+  nginx http fastcgi temporary files: "fastcgi_temp"
+  nginx http uwsgi temporary files: "uwsgi_temp"
+  nginx http scgi temporary files: "scgi_temp"
+  
+  
+[root@iZuf6ayj54m6qqykp29r2bZ sbin]# /user/local/nginx/sbin/nginx -t
+-bash: /user/local/nginx/sbin/nginx: No such file or directory
+[root@iZuf6ayj54m6qqykp29r2bZ sbin]# ./nginx -t
+nginx: the configuration file /usr/local/nginx/conf/nginx.conf syntax is ok
+nginx: configuration file /usr/local/nginx/conf/nginx.conf test is successful
+
+nginx目前还未添加到系统服务(下面是通过shell脚本处理)
+使用Linux的service命令启动nginx
+service nginx status
+
+ vi /etc/init.d/nginx  (输入下面的代码)
+#!/bin/bash
+# nginx Startup script for the Nginx HTTP Server
+# it is v.0.0.2 version.
+# chkconfig: - 85 15
+# description: Nginx is a high-performance web and proxy server.
+#              It has a lot of features, but it's not for everyone.
+# processname: nginx
+# pidfile: /var/run/nginx.pid
+# config: /usr/local/nginx/conf/nginx.conf
+
+#nginx程序路径
+nginxd=/usr/local/nginx/sbin/nginx
+
+#nginx配置文件路径
+nginx_config=/usr/local/nginx/conf/nginx.conf
+
+nginx pid文件的路径，可以在nginx的配置文件中找到
+nginx_pid=/var/run/nginx.pid
+RETVAL=0
+prog="nginx"
+# Source function library.
+. /etc/rc.d/init.d/functions
+# Source networking configuration.
+. /etc/sysconfig/network
+# Check that networking is up.
+[ ${NETWORKING} = "no" ] && exit 0
+[ -x $nginxd ] || exit 0
+# Start nginx daemons functions.
+start() {
+if [ -e $nginx_pid ];then
+   echo "nginx already running...."
+   exit 1
+fi
+   echo -n $"Starting $prog: "
+   daemon $nginxd -c ${nginx_config}
+   RETVAL=$?
+   echo
+   [ $RETVAL = 0 ] && touch /var/lock/subsys/nginx
+   return $RETVAL
+}
+# Stop nginx daemons functions.
+stop() {
+        echo -n $"Stopping $prog: "
+        killproc $nginxd
+        RETVAL=$?
+        echo
+        [ $RETVAL = 0 ] && rm -f /var/lock/subsys/nginx /var/run/nginx.pid
+}
+# reload nginx service functions.
+reload() {
+    echo -n $"Reloading $prog: "
+    #kill -HUP `cat ${nginx_pid}`
+    killproc $nginxd -HUP
+    RETVAL=$?
+    echo
+}
+# See how we were called.
+case "$1" in
+start)
+        start
+        ;;
+stop)
+        stop
+        ;;
+reload)
+        reload
+        ;;
+restart)
+        stop
+        start
+        ;;
+status)
+        status $prog
+        RETVAL=$?
+        ;;
+*)
+        echo $"Usage: $prog {start|stop|restart|reload|status|help}"
+        exit 1
+esac
+exit $RETVAL
+
+ 设置文件的访问权限
+
+chmod a+x /etc/init.d/nginx   (a+x ==> all user can execute  所有用户可执行)
+
+这样在控制台就很容易的操作nginx了：查看Nginx当前状态、启动Nginx、停止Nginx、重启Nginx
+
+同样的修改了nginx的配置文件nginx.conf，也可以使用上面的命令重新加载新的配置文件并运行，可以将此命令加入到rc.local文件中，这样开机的时候nginx就默认启动了
+
+vi /etc/rc.local
+
+加入一行  /etc/init.d/nginx start    保存并退出，下次重启会生效。
