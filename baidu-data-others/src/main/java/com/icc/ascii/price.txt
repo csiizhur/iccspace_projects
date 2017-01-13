@@ -1,6 +1,0 @@
-native2ascii -encoding utf-8 .txt .properties
-
-888
-元/月
-
-							  
