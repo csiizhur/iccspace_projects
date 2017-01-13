@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd">
+	<!-- 配置JMS连接工厂 这里暴露内部统一使用的MQ地址 -->
+	<bean id="jmsConnectionFactory" class="org.apache.activemq.ActiveMQConnectionFactory">
+		<!-- ActiveMQ服务的地址和端口 -->
+		<property name="brokerURL" value="failover:(tcp://192.168.0.186:61616)" />
+		<!-- //表示异步传送，默认是false，同步 -->
+		<property name="useAsyncSend" value="true" />
+	</bean>
+
+	<bean id="pooledJmsConnectionFactory" class="org.apache.activemq.pool.PooledConnectionFactory"
+
+		destroy-method="stop">
+
+		<property name="connectionFactory" ref="jmsConnectionFactory" />
+
+		<property name="maxConnections" value="100" />
+
+		<property name="maximumActive" value="50" />
+
+	</bean>
+
+	<!-- 推送给用户信息 创建一个Queue -->
+	<bean id="userServiceQueue" class="org.apache.activemq.command.ActiveMQQueue">
+		<constructor-arg>
+			<value>user.service.queue</value>
+		</constructor-arg>
+	</bean>
+	<!-- 推送给新闻信息 创建一个Queue -->
+	<bean id="newsServiceQueue" class="org.apache.activemq.command.ActiveMQQueue">
+		<constructor-arg>
+			<value>news.service.queue</value>
+		</constructor-arg>
+	</bean>
+	<!-- 推送给客户信息 创建一个Queue -->
+	<bean id="clientServiceQueue" class="org.apache.activemq.command.ActiveMQQueue">
+		<constructor-arg>
+			<value>client.service.queue</value>
+		</constructor-arg>
+	</bean>
+	<!-- 定义消息队列（Queue） -->
+	<bean id="queueDestination" class="org.apache.activemq.command.ActiveMQQueue">
+		<!-- 设置消息队列的名字 -->
+		<constructor-arg>
+			<value>testSpringQueue</value>
+		</constructor-arg>
+	</bean>
+	<!-- 定义消息发布（Pub/Sub） -->
+	<!-- <bean id="topicDestination" class="org.apache.activemq.command.ActiveMQTopic"> -->
+	<!-- <constructor-arg> -->
+	<!-- <value>topic</value> -->
+	<!-- </constructor-arg> -->
+	<!-- </bean> -->
+	<!-- 配置JMS模板（Queue），Spring提供的JMS工具类，它发送、接收消息。 -->
+	<bean id="jmsTemplate" class="org.springframework.jms.core.JmsTemplate">
+		<property name="connectionFactory" ref="pooledJmsConnectionFactory" />
+		<property name="defaultDestination" ref="queueDestination" />
+		<property name="receiveTimeout" value="10000" />
+	</bean>
+</beans>
