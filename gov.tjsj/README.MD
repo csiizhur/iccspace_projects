@@ -1,0 +1,1 @@
+F:\Program Files\Tencent\QQLite\I18N\2052
